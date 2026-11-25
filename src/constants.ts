@@ -1,5 +1,6 @@
 // Keep in step with the client's src/config.js by hand.
-export const ROOM_MAX_CLIENTS = 50;
+// Kit PvP room size (players per arena; 2-100 for Bloxity party play). Also the deploy's roomSize.
+export const ROOM_MAX_CLIENTS = 20;
 
 // Longest accepted strings.
 export const NAME_MAX = 64;
@@ -69,3 +70,34 @@ export const ID_PATTERN = /^[A-Za-z0-9_-]{1,32}$/;
 // The client's per-browser fallback id for players who are not signed in to Bloxity.
 // Guests are never persisted.
 export const GUEST_ID_PREFIX = "guest-";
+
+// Gold a verified rewarded ad pays (the client grants it; the server only checks the ad token).
+export const AD_REWARD_GOLD = 150;
+
+// --- Kit PvP (KitRoom.ts, kitRelay.ts). Keep in step with the client's src/net.js + combat.js.
+export const KIT = {
+  // rewarded ads (boxity/ads.ts): placement name, Gold paid, per-session cooldown and cap
+  ad: { placement: "bonus-gold", gold: AD_REWARD_GOLD, cooldownMs: 60_000, maxPerSession: 20 },
+  killGapMs: 3000, // at most one counted player kill per killer per this long (Boxity stats/boards/badges)
+  emotesPerSecond: 1, // Boxity emote relay (opaque 24-hex catalogue ids)
+  zones: ["lobby", "drop", "arena", "dead", "duel"],
+  // damage kinds (client combat.js damage() opts.kind)
+  kinds: ["melee", "arrow", "projectile", "explosion", "fire", "poison", "lightning", "magic", "sting", "fall", "lava", "void"],
+  statuses: ["slow", "freeze", "root", "invis", "mark", "speed", "shieldBroken"],
+  bounds: { xz: 900, yMin: -400, yMax: 200, speed: 80 }, // the duel platforms sit at x ~ 400..700
+  maxHit: 40, // largest single hit (before the victim's armor)
+  hitRange: 48, // m between attacker and victim (arrows, tridents, sonic booms)
+  hitsPerSecond: 25, // per sender (bees, turrets and areas add up)
+  actsPerSecond: 20,
+  fxPerSecond: 30,
+  fxBytes: 2048, // one cosmetic event
+  botsBytes: 16384, // one bots snapshot from the host
+  reconnectSeconds: 10,
+  // saves (kitStore.ts)
+  save: { goldMax: 1e12, levelMax: 100000, countMax: 1e9, playtimeMax: 31_536_000 },
+  saveEveryMs: 2000, // a session's saves are written at most this often
+  boardSize: 10,
+  boardEveryMs: 30_000, // leaderboard cache + broadcast
+  // duels (KitRoom.ts): 1v1 on one of `slots` platforms (the client's DUEL.slots), first to `wins`
+  duel: { slots: 4, wins: 3, countdownMs: 3000, betweenMs: 2500, k: 32, startRating: 1000, ratingMin: 100, ratingMax: 4000 },
+};
