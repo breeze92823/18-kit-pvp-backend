@@ -2,6 +2,7 @@ import assert from "assert";
 import type { ColyseusTestServer } from "@colyseus/testing";
 
 import type appConfig from "../src/app.config.js";
+import { AVATAR_MAX_LEN } from "../src/constants.js";
 import { KitState } from "../src/rooms/schema/KitState.js";
 import { sleep } from "./fakePlayers.js";
 import { testServer } from "./server.js";
@@ -95,5 +96,32 @@ describe("kit pvp room", () => {
     await sleep(50);
     assert.strictEqual(feed.at(-1).killer, "Zed");
     assert.strictEqual(feed.at(-1).killerId, "bot:903");
+  });
+  it('relays the Bloxity look through the roster, length-capped and rate-limited', async () => {
+    const room = await colyseus.createRoom<KitState>('kitpvp', {});
+    const look = JSON.stringify({ e: { hatId: '6602f1aabbccddeeff001122', skinId: '3' }, p: { height: 1.2 } });
+    const a = await colyseus.connectTo(room, { avatar: look });
+    await sleep(50);
+    const p = room.state.players.get(a.sessionId)!;
+    assert.strictEqual(p.avatar, look, 'the join option sets the look');
+    const next = JSON.stringify({ e: { skinId: '4' } });
+    a.send('setAvatar', { avatar: next });
+    await sleep(50);
+    assert.strictEqual(p.avatar, next);
+    a.send('setAvatar', { avatar: 'x'.repeat(AVATAR_MAX_LEN + 1) });
+    a.send('setAvatar', { avatar: 42 });
+    await sleep(50);
+    assert.strictEqual(p.avatar, next, 'an oversized or non-string look is ignored');
+    // 2 per second: the third in a burst is dropped
+    a.send('setAvatar', { avatar: '1' });
+    a.send('setAvatar', { avatar: '2' });
+    a.send('setAvatar', { avatar: '3' });
+    await sleep(80);
+    assert.notStrictEqual(p.avatar, '3', 'rate-limited');
+    a.send('setAvatar', { avatar: '' });
+    await sleep(1100);
+    a.send('setAvatar', { avatar: '' });
+    await sleep(50);
+    assert.strictEqual(p.avatar, '', 'empty clears it');
   });
 });

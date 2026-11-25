@@ -1,7 +1,7 @@
 import { Room, Client, CloseCode } from "colyseus";
 import { KitState, KitPlayer } from "./schema/KitState.js";
 import { KIT, ROOM_MAX_CLIENTS } from "../constants.js";
-import { applyPose, cleanName, fitsBytes, RateLimit, sanitizeAct, sanitizeHit } from "../kitRelay.js";
+import { applyAvatar, applyPose, cleanName, fitsBytes, RateLimit, sanitizeAct, sanitizeHit } from "../kitRelay.js";
 import { verifyToken } from "../auth.js";
 import { BOARD_STATS, loadKit, savePvpKill, sanitizeKitSave, saveKit, saveRating, savedTops, type BoardRow, type KitDoc } from "../kitStore.js";
 import { DuelBook, eloDelta, type Duel, type DuelMode } from "../duels.js";
@@ -21,6 +21,7 @@ import { attachMirror, detachMirror, KillGate, recordDuel, recordKill, type Mirr
  * client -> server: pose, hit { to, amount, opts, bot? }, botHit { bot, amount, opts },
  *   act { to | bot, type, ... }, fx { ... }, bots { ... } (host), died { by, byName, cause, streak },
  *   botDied { name, by, byName, cause, streak } (host), summon { a } (forwarded to the host),
+ *   setAvatar { avatar } (the Bloxity look JSON, opaque + length-capped; also the join option `avatar`),
  *   emote { id } (Boxity catalogue id, 24 hex), adReward { placement, token } (rewarded ad, boxity/ads.ts)
  * server -> client: hit { from, amount, opts }, botHit { from, bot, amount, opts }, act { from, ... },
  *   botAct { from, bot, ... }, fx { from, ... }, bots { ... }, feed { victim, victimId, killer, killerId, cause },
@@ -34,6 +35,7 @@ export class KitRoom extends Room<{ state: KitState }> {
   private actRate = new RateLimit(KIT.actsPerSecond);
   private fxRate = new RateLimit(KIT.fxPerSecond);
   private emoteRate = new RateLimit(KIT.emotesPerSecond);
+  private avatarRate = new RateLimit(KIT.avatarsPerSecond);
   private killGate = new KillGate();
   private adGate = new AdGate();
   private mirrors = new Map<string, Mirror>(); // sessionId -> server-owned counters (boxity/mirror.ts)
@@ -299,6 +301,13 @@ export class KitRoom extends Room<{ state: KitState }> {
       if (!this.emoteRate.allow(client.sessionId)) return;
       this.broadcast("emote", { from: client.sessionId, id }, { except: client });
     },
+    // The sender's Bloxity look (equipped ids + proportions as JSON) for the others to draw. Relayed
+    // through the roster as sent: only length-capped and rate-limited here, the clients validate it.
+    setAvatar: (client: Client, msg: { avatar?: unknown }) => {
+      const p = this.player(client.sessionId);
+      if (!p || !this.avatarRate.allow(client.sessionId)) return;
+      applyAvatar(p, msg?.avatar);
+    },
     // A rewarded ad finished on the client: check its token with Boxity, then tell the client to grant
     // the Gold (the save is client-authoritative, so the server never writes gold itself).
     adReward: async (client: Client, msg: { placement?: unknown; token?: unknown }) => {
@@ -359,12 +368,13 @@ export class KitRoom extends Room<{ state: KitState }> {
     }
   }
 
-  async onJoin(client: Client, options?: { token?: unknown; kit?: unknown; pose?: unknown }) {
+  async onJoin(client: Client, options?: { token?: unknown; kit?: unknown; pose?: unknown; avatar?: unknown }) {
     const p = new KitPlayer();
     p.seed = Math.floor(Math.random() * 0xffffff);
     p.name = `Guest ${1000 + Math.floor(Math.random() * 9000)}`;
     p.joinedAt = ++this.joins;
     applyPose(p, { ...(options?.pose as object), kit: options?.kit });
+    applyAvatar(p, options?.avatar);
     this.state.players.set(client.sessionId, p);
     this.electHost();
     const user = await verifyToken(options?.token);
@@ -421,6 +431,7 @@ export class KitRoom extends Room<{ state: KitState }> {
     this.actRate.forget(client.sessionId);
     this.fxRate.forget(client.sessionId);
     this.emoteRate.forget(client.sessionId);
+    this.avatarRate.forget(client.sessionId);
     this.electHost();
   }
 }
