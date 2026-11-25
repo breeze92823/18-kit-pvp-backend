@@ -25,6 +25,9 @@ export interface KitDoc {
   seen?: Record<string, boolean>;
   settings?: Record<string, number | boolean>;
   boostKills?: number;
+  mastery?: Record<string, number>; // kit id -> kills with it (client config MASTERY)
+  borrow?: { id: string; kind: "trial" | "rent"; paid: number; used: boolean } | null; // a kit for one arena life (client KIT_TRIAL)
+  trialDay?: number; // UTC day index the Kit of the Day trial was last used
   // server-only (never carried by a client save; they feed Boxity stats, leaderboards and badges)
   rating?: number;
   duelsWon?: number;
@@ -74,6 +77,19 @@ export function sanitizeKitSave(m: unknown): Partial<KitDoc> | null {
   }
   const d = o.daily as { last?: unknown; streak?: unknown } | undefined;
   if (d && finite(d.last) && finite(d.streak)) out.daily = { last: clamp(d.last, 0, 1e14), streak: Math.floor(clamp(d.streak, 0, 1000)) };
+  // kit mastery: kills per kit id
+  if (o.mastery && typeof o.mastery === "object" && !Array.isArray(o.mastery)) {
+    const r: Record<string, number> = {};
+    for (const [k, v] of Object.entries(o.mastery as Record<string, unknown>).slice(0, 128)) if (isId(k) && finite(v)) r[k] = Math.floor(clamp(v, 0, B.countMax));
+    out.mastery = r;
+  }
+  // a borrowed kit (Kit of the Day trial / Gold rental) for the next arena life; null = none
+  if (o.borrow === null) out.borrow = null;
+  else if (o.borrow && typeof o.borrow === "object") {
+    const b = o.borrow as Record<string, unknown>;
+    if (isId(b.id) && (b.kind === "trial" || b.kind === "rent")) out.borrow = { id: b.id, kind: b.kind, paid: finite(b.paid) ? Math.floor(clamp(b.paid, 0, B.goldMax)) : 0, used: b.used === true };
+  }
+  num("trialDay", 0, 1e7);
   for (const key of ["seen", "settings"] as const) {
     const v = o[key];
     if (!v || typeof v !== "object") continue;
