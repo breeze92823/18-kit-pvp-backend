@@ -80,6 +80,7 @@ export const KIT = {
   ad: { placement: "bonus-gold", gold: AD_REWARD_GOLD, cooldownMs: 60_000, maxPerSession: 20 },
   killGapMs: 3000, // at most one counted player kill per killer per this long (Boxity stats/boards/badges)
   emotesPerSecond: 1, // Boxity emote relay (opaque 24-hex catalogue ids)
+  avatarsPerSecond: 2, // `setAvatar` (the Bloxity look JSON, capped at AVATAR_MAX_LEN)
   zones: ["lobby", "drop", "arena", "dead", "duel"],
   // damage kinds (client combat.js damage() opts.kind)
   kinds: ["melee", "arrow", "projectile", "explosion", "fire", "poison", "lightning", "magic", "sting", "fall", "lava", "void"],

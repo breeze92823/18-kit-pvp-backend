@@ -2,7 +2,7 @@
 // in the roster or forwarded. The game is client-authoritative (the victim's client applies
 // damage with its own armor/shield/kit powers); the server only keeps the numbers sane, checks
 // that attacker and victim are both in the arena and near each other, and rate-limits hits.
-import { KIT } from "./constants.js";
+import { AVATAR_MAX_LEN, KIT } from "./constants.js";
 import type { KitPlayer } from "./rooms/schema/KitState.js";
 
 const finite = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
@@ -30,6 +30,15 @@ export function applyPose(p: KitPlayer, m: unknown): void {
   if (typeof o.zone === "string" && (KIT.zones as readonly string[]).includes(o.zone)) p.zone = o.zone;
   if (isId(o.kit)) p.kit = o.kit;
   if (o.item === "" || isId(o.item)) p.item = o.item as string;
+}
+
+// The player's Bloxity look (`setAvatar` { avatar } and the join option `avatar`): an opaque JSON
+// string the other clients parse and validate themselves, so the server only caps its length.
+// An empty string clears it (back to the stock rig). Returns true when it was accepted.
+export function applyAvatar(p: KitPlayer, avatar: unknown): boolean {
+  if (typeof avatar !== "string" || avatar.length > AVATAR_MAX_LEN) return false;
+  p.avatar = avatar;
+  return true;
 }
 
 // The extra hit options a client may forward (combat.js damage() opts), bounded.

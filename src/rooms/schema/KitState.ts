@@ -30,6 +30,7 @@ export const KitPlayer = schema(
     rating: t.uint16().default(1000), // ranked duel rating (server-owned)
     duel: t.string().default(""), // the duel this player is fighting in ("" = none)
     queued: t.string().default(""), // waiting for a duel: "casual" | "ranked" | ""
+    avatar: t.string().default(""), // Bloxity look JSON { e, p } relayed as sent (never parsed here), "" = stock rig
   },
   "KitPlayer",
 );
