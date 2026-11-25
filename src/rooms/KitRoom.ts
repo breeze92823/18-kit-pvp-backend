@@ -338,7 +338,8 @@ export class KitRoom extends Room<{ state: KitState }> {
       if (!this.actRate.allow(client.sessionId)) return;
       const a = msg?.a ?? {};
       const n = (v: unknown, lo: number, hi: number, d: number) => (typeof v === "number" && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d);
-      host.send("summon", { from: client.sessionId, a: { count: n(a.count, 1, 4, 2), hp: n(a.hp, 1, 30, 10), life: n(a.life, 1, 60, 25) } });
+      const kind = a.kind === "wolf" ? "wolf" : "zombie"; // Necromancer zombies / the Wolf Tamer's wolf
+      host.send("summon", { from: client.sessionId, a: { count: n(a.count, 1, 4, 2), hp: n(a.hp, 1, 30, 10), life: n(a.life, 1, 60, 25), kind } });
     },
   };
 

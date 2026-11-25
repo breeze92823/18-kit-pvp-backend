@@ -34,6 +34,16 @@ describe("kit pvp duels + saves", () => {
     assert.deepStrictEqual(s.settings, { scoreboard: true });
   });
 
+  it("keeps kit mastery, a borrowed kit and the trial day, bounded", () => {
+    const s = sanitizeKitSave({ mastery: { spark: 12.9, "BAD ID": 3, tamer: -4, samurai: 1e99 }, borrow: { id: "samurai", kind: "trial", paid: 99, used: true, extra: 1 }, trialDay: 20417.6 })!;
+    assert.deepStrictEqual(s.mastery, { spark: 12, tamer: 0, samurai: KIT.save.countMax });
+    assert.deepStrictEqual(s.borrow, { id: "samurai", kind: "trial", paid: 99, used: true });
+    assert.strictEqual(s.trialDay, 20417);
+    assert.strictEqual(sanitizeKitSave({ borrow: null })!.borrow, null, "returning a kit clears it");
+    assert.strictEqual(sanitizeKitSave({ borrow: { id: "samurai", kind: "gift" } })!.borrow, undefined, "unknown kinds are dropped");
+    assert.strictEqual(sanitizeKitSave({ mastery: ["spark"] })!.mastery, undefined);
+  });
+
   it("rates an upset higher than an expected win", () => {
     assert.strictEqual(eloDelta(1000, 1000), 16);
     assert.ok(eloDelta(900, 1200) > eloDelta(1200, 900));
