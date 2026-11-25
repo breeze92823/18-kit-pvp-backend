@@ -57,6 +57,12 @@ export interface SavedPet {
 
 let client: MongoClient | null = null;
 let players: Collection<PlayerDoc> | null = null;
+// Kit PvP saves (kitStore.ts): one document per verified Bloxity user.
+let kitPlayers: Collection<import("./kitStore.js").KitDoc> | null = null;
+export const getKitPlayers = () => kitPlayers;
+export function __setKitPlayersForTest(fake: typeof kitPlayers): void {
+  kitPlayers = fake;
+}
 
 export async function connectDb(): Promise<void> {
   const uri = process.env.MONGODB_URI;
@@ -69,6 +75,10 @@ export async function connectDb(): Promise<void> {
     await client.connect();
     // No dbName passed to .db() -- the injected URI already points at this game+channel's database.
     players = client.db().collection<PlayerDoc>("players");
+    kitPlayers = client.db().collection("kitpvp");
+    for (const stat of ["kills", "gold", "playtime", "rating"]) {
+      kitPlayers.createIndex({ [stat]: -1 }).catch((err) => console.warn(`[db] kitpvp index on ${stat} failed`, err));
+    }
     console.log("[db] connected to MongoDB");
     // The leaderboards sort and count by these (leaderboard.ts).
     for (const stat of LEADERBOARD_STATS) {

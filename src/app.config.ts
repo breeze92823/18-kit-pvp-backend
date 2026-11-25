@@ -2,6 +2,7 @@ import cors from "cors";
 import { defineServer, defineRoom, monitor, playground, WebSocketTransport } from "colyseus";
 
 import { WorldRoom } from "./rooms/WorldRoom.js";
+import { KitRoom } from "./rooms/KitRoom.js";
 import { MAX_PAYLOAD_BYTES } from "./constants.js";
 
 const server = defineServer({
@@ -11,6 +12,8 @@ const server = defineServer({
   rooms: {
     // The client calls joinOrCreate("world", ...). Progress is shared across rooms via Mongo.
     world: defineRoom(WorldRoom),
+    // Kit PvP: the client calls joinOrCreate("kitpvp", { token, kit, pose }).
+    kitpvp: defineRoom(KitRoom),
   },
 
   express: (app) => {
