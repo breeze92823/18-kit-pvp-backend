@@ -43,7 +43,7 @@ function stubFetch(over: (url: string, body: any) => { status?: number; body?: a
 }
 const setEnv = () => {
   process.env.BLOXITY_REPORT_TOKEN = "rt";
-  process.env.BLOXITY_GAME_ID = "kit-pvp";
+  process.env.BLOXITY_GAME_ID = "18-kit-pvp";
   process.env.BLOXITY_API_URL = "https://api.test";
 };
 const clearEnv = () => {
@@ -130,12 +130,12 @@ describe("boxity: pure rules", () => {
     const m = attachMirror("a", { pvpKills: 7 });
     recordKill(m, 3);
     await flushStats();
-    assert.strictEqual(calls[0].url, "https://api.test/v1/games/kit-pvp/stats");
+    assert.strictEqual(calls[0].url, "https://api.test/v1/games/18-kit-pvp/stats");
     assert.strictEqual(calls[0].auth, "Bearer rt");
     assert.strictEqual(calls[0].body.definitions.length, 5);
     assert.strictEqual(calls[0].body.players[0].values.pvp_kills, 8);
     await flushLeaderboards();
-    const lb = calls.find((c) => c.url.includes("/v1/leaderboards/hosted/kit-pvp/report"))!;
+    const lb = calls.find((c) => c.url.includes("/v1/leaderboards/hosted/18-kit-pvp/report"))!;
     assert.deepStrictEqual(lb.body.boards, BOARDS);
     assert.deepStrictEqual(lb.body.scores.map((s: any) => s.board), ["kills", "streak"]);
     assert.strictEqual(m.pendingKills, 0, "landed: forgotten");
@@ -147,7 +147,7 @@ describe("boxity: pure rules", () => {
 
   it("awards each badge once, retries a failed award and stops on 403", async () => {
     setEnv();
-    process.env.BLOXITY_GAME_SLUG = "kit-pvp";
+    process.env.BLOXITY_GAME_SLUG = "18-kit-pvp";
     let awardFails = true;
     stubFetch((url) => {
       if (url.endsWith("/declare")) return { body: { ok: true } };
@@ -160,7 +160,7 @@ describe("boxity: pure rules", () => {
     await sleep(80);
     const award = () => calls.filter((c) => c.url.endsWith("/award"));
     assert.deepStrictEqual(award()[0].body.awards.map((a: any) => a.key).sort(), ["first_blood", "hunter"], "welcome is already held");
-    assert.strictEqual(award()[0].body.gameSlug, "kit-pvp");
+    assert.strictEqual(award()[0].body.gameSlug, "18-kit-pvp");
     assert.ok(calls.find((c) => c.url.endsWith("/declare"))!.body.badges.length === BADGES.length);
     awardFails = false;
     await badgeCheck(m); // the failed ones are sent again
@@ -259,7 +259,7 @@ describe("boxity: kit room", () => {
     await sleep(120);
     assert.deepStrictEqual(res[2], { ok: true, placement: "bonus-gold", gold: KIT.ad.gold });
     const verify = calls.find((c) => c.url.endsWith("/v1/ads/reward/verify") && c.body.rewardToken === "ad-ok-aaaaaaaa")!;
-    assert.deepStrictEqual(verify.body, { gameSlug: "kit-pvp", rewardToken: "ad-ok-aaaaaaaa" });
+    assert.deepStrictEqual(verify.body, { gameSlug: "18-kit-pvp", rewardToken: "ad-ok-aaaaaaaa" });
     a.send("adReward", { placement: "bonus-gold", token: "ad-ok-bbbbbbbb" });
     await sleep(100);
     assert.strictEqual(res[3].reason, "cooldown");

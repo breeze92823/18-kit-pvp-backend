@@ -2,7 +2,7 @@
 // BLOXITY_API_URL is the API of the environment this deploy runs in (prod or stage).
 export interface BoxityEnv {
   apiUrl: string;
-  gameSlug: string; // BLOXITY_GAME_SLUG, "kit-pvp" when unset (auth.ts uses the same default)
+  gameSlug: string; // BLOXITY_GAME_SLUG, else BLOXITY_GAME_ID, else "18-kit-pvp" (auth.ts uses the same default)
   gameSlugSet: boolean; // BLOXITY_GAME_SLUG was actually provided (badges send it only then)
   gameId: string; // "" when not deployed by Boxity hosting
   reportToken: string; // "" when not deployed by Boxity hosting
@@ -12,7 +12,8 @@ export function boxityEnv(): BoxityEnv {
   const slug = process.env.BLOXITY_GAME_SLUG || "";
   return {
     apiUrl: (process.env.BLOXITY_API_URL || "https://api.bloxity.io").replace(/\/$/, ""),
-    gameSlug: slug || "kit-pvp",
+    // this game's slug = its hosting id (LEGION_GAME_ID). "kit-pvp" is ANOTHER game on Boxity.
+    gameSlug: slug || process.env.BLOXITY_GAME_ID || "18-kit-pvp",
     gameSlugSet: !!slug,
     gameId: process.env.BLOXITY_GAME_ID || "",
     reportToken: process.env.BLOXITY_REPORT_TOKEN || "",

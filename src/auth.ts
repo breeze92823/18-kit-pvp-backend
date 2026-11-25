@@ -5,7 +5,8 @@
 export type VerifiedUser = { id: string; name: string };
 
 const API = () => (process.env.BLOXITY_API_URL || "https://api.bloxity.io").replace(/\/$/, "");
-const SLUG = () => process.env.BLOXITY_GAME_SLUG || "kit-pvp";
+// This game's slug on Bloxity (= its hosting id, LEGION_GAME_ID). "kit-pvp" is a different game.
+const SLUG = () => process.env.BLOXITY_GAME_SLUG || process.env.BLOXITY_GAME_ID || "18-kit-pvp";
 
 export async function verifyToken(token: unknown): Promise<VerifiedUser | null> {
   if (typeof token !== "string" || token.length < 10 || token.length > 4096) return null;
